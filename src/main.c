@@ -1,10 +1,9 @@
 #define MAX_D 6
+#define ENC   0
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define PRINT_L fprintf(stderr, "%d\n", __LINE__)
 
 const u_int8_t morse_codes[26] = {
     0b00100010, // a
@@ -69,6 +68,7 @@ void encode(char dest[MAX_D], const char src[2]){
 	    l += dat.l;
 	    if(l >= 14) break;
 	}
+	if(l < 14) goto _inc;
 	d &= 0b1111111111111100;
 	if(d == inp){
 	    for(int j = 0; j <= i; ++j){
@@ -77,6 +77,7 @@ void encode(char dest[MAX_D], const char src[2]){
 	    return;
 	}
 	
+_inc:
 	for(int k = 0; k < MAX_D; ++k){
 	    ind[k]++;
 	    if(ind[k] < 26) break;
@@ -86,10 +87,32 @@ void encode(char dest[MAX_D], const char src[2]){
     printf("cant find a combo 3:\n");
 }
 
-int main(int argc, char **argv){
-    char *str = "wow ure smart :3";
-    int len = strlen(str);
+void decode(char dest[2], const char src[MAX_D]){
+    u_int16_t d = 0;
+    int l = 0;
+    for(int i = 0; i < MAX_D; ++i){
+	if(src[i] > 'Z' || src[i] < 'A') break;
+	mc_dat dat = get_dat(src[i] - 65);
+	d |= lshift(dat.d, (8 - l));
+	l += dat.l;
+    }
+    d &= 0b1111111111111100;
+    dest[0] = d >> 9;
+    dest[1] = (d >> 2) & 0b01111111;
+}
 
+void split_code(char dest[MAX_D], int *i, const char *src){
+    int j = 0;
+    while(src[*i] <= 'Z' && src[*i] >= 'A'){
+	dest[j++] = src[(*i)++];
+    }
+    ++(*i);
+}
+
+int main(int argc, char **argv){
+#if ENC
+    char *str = "ASCII stands for American Standard Code for Information Interchange. Computers can only understand numbers, so an ASCII code is the numerical representation of a character such as 'a' or '@' or an action of some sort.";
+    int len = strlen(str);
     for(int i = 0; i < len; i += 2){
 	char dest[MAX_D] = {};
 	char src[2] = {};
@@ -102,6 +125,18 @@ int main(int argc, char **argv){
 	printf(" ");
     }
     printf("\n");
+
+#else
+    char *str = "BUCJ BJFA XFBEA OUOCA ZUQG ZXZG LVXB QOOF LVHA QKGAA OUACA ZJBA QZBEA CJGB ZUQG ZXBA OFZB LVHG QOZB ZCBEA ZQYG OFAHA XUQG ZQYG OFQC TBJCA QUQO QZBEA XUQG OLGAA OFZJ QVBA QQXG ZCYB LVHG QOQC MBJAA OLGAA OUJUB LVBG ZUQG LVYG QQKB OXAHA OAJJA ZDGAA OUJUB MCABA QQDB LVYB OAJWA GFGAA OUJUB RZAHA OUOJB LVBA QZBEA BUCJ BJFA XFBEA ZJYG ZDGAA LVCA OUCH OLGB ZCBEA MJJAA QKGAA OUACA ZJBA QBBEA OFGAA MBJF ZYZG ZYYB MCABA MCACA QOQG LVYG ZZBEA ZFBEA ZWGB ZUOF ZUZJ OLGAA OFAHA OUOKA ZWGB LVBA OUCH LMMBA RJAHA QOOF LHXG BHXG LVYG OFAHA ZUQG LVBA ZJGB QUQO QZBEA QOZG LVZG QOQC ZCBEA OUOJB OFMCA RMBHA";
+    int i = 0;
+    while(i < strlen(str)){
+	char src[MAX_D] = {}, dest[2] = {};
+	split_code(src, &i, str);
+	decode(dest, src);
+	printf("%c%c", dest[0], dest[1]);
+    }
+    printf("\n");
+#endif
 
     return 0;
 }
